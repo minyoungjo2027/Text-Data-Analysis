@@ -1,0 +1,74 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+const stopwords = new Set(["은", "는", "이", "가", "을", "를", "에", "의", "와", "과", "도", "그리고", "하지만", "정말", "너무", "있다", "하다", "좋다"]);
+const initial = [
+  "AI 수업에서 직접 단어를 분석해 보니 신기하고 재미있어요!",
+  "텍스트 데이터를 숫자로 바꾸는 과정이 궁금했어요.",
+  "친구들과 비슷한 생각을 했는지 비교해 보고 싶어요.",
+];
+
+function tokens(text: string) {
+  return text
+    .replace(/[^가-힣a-zA-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 1)
+    .map((word) => word.toLowerCase());
+}
+
+export default function Home() {
+  const [comments, setComments] = useState(initial);
+  const [step, setStep] = useState(1);
+  const data = useMemo(() => {
+    const raw = comments.map(tokens);
+    const cleaned = raw.map((words) => words.filter((word) => !stopwords.has(word)));
+    const vocabulary = [...new Set(cleaned.flat())];
+    const df = Object.fromEntries(vocabulary.map((word) => [word, cleaned.filter((doc) => doc.includes(word)).length]));
+    const idf = Object.fromEntries(vocabulary.map((word) => [word, Math.log((comments.length + 1) / ((df[word] || 0) + 1)) + 1]));
+    const vectors = cleaned.map((doc) => vocabulary.map((word) => doc.filter((w) => w === word).length * idf[word]));
+    const cosine = (a: number[], b: number[]) => {
+      const denom = Math.sqrt(a.reduce((s, v) => s + v * v, 0)) * Math.sqrt(b.reduce((s, v) => s + v * v, 0));
+      return denom ? a.reduce((s, v, i) => s + v * b[i], 0) / denom : 0;
+    };
+    return { raw, cleaned, vocabulary, df, idf, vectors, matrix: vectors.map((a) => vectors.map((b) => cosine(a, b))) };
+  }, [comments]);
+
+  const update = (i: number, value: string) => setComments((prev) => prev.map((item, index) => (index === i ? value : item)));
+  const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "유사도"];
+
+  return (
+    <main>
+      <section className="hero">
+        <nav><div className="brand"><span className="brand-dot">⌁</span> 텍스트랩</div><div className="nav-note">AI를 읽는 가장 쉬운 방법</div></nav>
+        <div className="hero-grid">
+          <div><p className="eyebrow">TEXT ANALYSIS · PLAYGROUND</p><h1>문장이 <em>데이터</em>가 되는<br />순간을 만나보세요.</h1><p className="intro">댓글 한 줄에서 시작해, AI가 글을 읽고 숫자로 바꾸고 서로의 의미를 비교하는 과정을 직접 따라가요.</p><button className="primary" onClick={() => document.getElementById("lab")?.scrollIntoView({ behavior: "smooth" })}>실험 시작하기 <span>↓</span></button></div>
+          <div className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="core">AI<br/><small>TEXT</small></div><span className="float f1">형태소</span><span className="float f2">TF-IDF</span><span className="float f3">유사도</span></div>
+        </div>
+      </section>
+
+      <section className="lab" id="lab">
+        <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 7</div></div>
+        <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
+
+        <div className="workbench">
+          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
+          <div className="stage">
+            {step === 1 && <div className="panel"><PanelTitle n="01" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
+            {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
+            {step === 3 && <div className="panel"><PanelTitle n="03" title="불용어를 걸러냈어요" text="조사처럼 자주 나오지만 의미를 구별하기 어려운 단어를 제거해요." />{data.raw.map((words, i) => <div className="result-row" key={i}><b>댓글 {i + 1}</b><div>{words.map((word, x) => <span className={stopwords.has(word) ? "token removed" : "token mint"} key={x}>{word}</span>)}</div></div>)}</div>}
+            {step === 4 && <div className="panel"><PanelTitle n="04" title="TF: 단어 빈도를 세어요" text="TF(Term Frequency)는 한 댓글 안에서 단어가 몇 번 나왔는지 보여줘요." />{data.cleaned.map((doc, i) => <div className="bar-row" key={i}><b>댓글 {i + 1}</b><div>{[...new Set(doc)].map((word) => <span className="bar" key={word} style={{ width: `${Math.max(64, doc.filter((w) => w === word).length * 72)}px` }}>{word} <small>×{doc.filter((w) => w === word).length}</small></span>)}</div></div>)}</div>}
+            {step === 5 && <div className="panel"><PanelTitle n="05" title="IDF: 희소성을 계산해요" text="여러 댓글에 자주 등장할수록 특별함은 낮아져요. IDF = log((문서 수 + 1) / (포함 문서 수 + 1)) + 1" /><table><thead><tr><th>단어</th><th>포함 댓글 수 (DF)</th><th>IDF</th></tr></thead><tbody>{data.vocabulary.map((word) => <tr key={word}><td>{word}</td><td>{data.df[word]}</td><td>{data.idf[word].toFixed(2)}</td></tr>)}</tbody></table></div>}
+            {step === 6 && <div className="panel"><PanelTitle n="06" title="TF-IDF: 의미의 좌표 만들기" text="자주 나오면서도 다른 댓글에는 드문 단어에 더 높은 점수를 줘요." /><div className="score-grid">{data.vocabulary.map((word) => <div key={word}><span>{word}</span><b>{Math.max(...data.vectors.map((v) => v[data.vocabulary.indexOf(word)])).toFixed(2)}</b><i style={{ height: `${35 + Math.max(...data.vectors.map((v) => v[data.vocabulary.indexOf(word)])) * 34}px` }}/></div>)}</div></div>}
+            {step === 7 && <div className="panel"><PanelTitle n="07" title="코사인 유사도 히트맵" text="두 댓글의 단어 방향이 비슷할수록 1에 가까워져요." /><div className="heatmap">{data.matrix.flatMap((row, i) => row.map((value, j) => <div key={`${i}-${j}`} style={{ background: `rgba(29, 185, 84, ${0.12 + value * 0.88})` }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>))}</div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
+            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 7} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
+          </div>
+        </div>
+      </section>
+      <footer><div className="brand"><span className="brand-dot">⌁</span> 텍스트랩</div><p>AI 기반 융합교육 방법 · 텍스트 분석 체험 학습</p></footer>
+    </main>
+  );
+}
+
+function PanelTitle({ n, title, text }: { n: string; title: string; text: string }) { return <div className="panel-title"><span>{n}</span><div><h3>{title}</h3><p>{text}</p></div></div>; }
+function ResultRow({ index, words, color }: { index: number; words: string[]; color: string }) { return <div className="result-row"><b>댓글 {index + 1}</b><div>{words.map((word, i) => <span className={`token ${color}`} key={i}>{word}<small>/Noun</small></span>)}</div></div>; }
