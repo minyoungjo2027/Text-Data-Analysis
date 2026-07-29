@@ -14,7 +14,7 @@ aside.pdf-hide > .primary{display:block;width:100%;margin-top:0}aside.pdf-hide >
 .embedding-list{display:grid;gap:22px}
 .embedding-row{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:start}
 .embedding-row>b{font-size:11px;color:#777;padding-top:28px}
-.vector-display{grid-column:2;display:flex;align-items:center;gap:10px;margin-top:-12px;padding:9px 12px;border-radius:10px;background:#f1f8f4;border:1px solid #dcece2;color:#315c42;font-size:12px}.vector-display b{font-weight:900;color:#168a43}.vector-display code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#254c3a;letter-spacing:.2px}
+.vector-display{grid-column:2;display:flex;align-items:center;gap:10px;margin-top:-12px;padding:9px 12px;border-radius:10px;background:#f1f8f4;border:1px solid #dcece2;color:#315c42;font-size:15px}.vector-display b{font-weight:900;color:#168a43}.vector-display code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#254c3a;letter-spacing:.2px;font-size:15px}.vector-equals{font-weight:900;color:#168a43}
 .embedding-scroll{overflow-x:auto;padding-bottom:6px}
 .embedding-words,.embedding-values{display:grid;grid-auto-columns:minmax(62px,1fr);grid-auto-flow:column;min-width:max-content}
 
