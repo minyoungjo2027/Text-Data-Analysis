@@ -43,6 +43,24 @@ function tokens(text: string) {
     });
 }
 
+// 교육용 분석에서는 자주 쓰이는 활용형을 대표 단어(표제어)로 묶습니다.
+// 예: 친절하셔서·친절했습니다·친절한·친절함 → 친절
+function normalizeWord(word: string) {
+  const exact: Record<string, string> = {
+    친절하셔서: "친절",
+    친절했습니다: "친절",
+    친절합니다: "친절",
+    친절했어요: "친절",
+    친절해서: "친절",
+    친절하다: "친절",
+    친절해요: "친절",
+    친절하게: "친절",
+    친절한: "친절",
+    친절함: "친절",
+  };
+  return exact[word] || word;
+}
+
 export default function Home() {
   const [comments, setComments] = useState(initial);
   const [studentName, setStudentName] = useState("");
@@ -74,7 +92,7 @@ export default function Home() {
   }, []);
   const data = useMemo(() => {
     const raw = comments.map(tokens);
-    const cleaned = raw.map((words) => words.filter((word) => !stopwords.has(word)));
+    const cleaned = raw.map((words) => words.filter((word) => !stopwords.has(word)).map(normalizeWord));
     const vocabulary = [...new Set(cleaned.flat())];
     const df = Object.fromEntries(vocabulary.map((word) => [word, cleaned.filter((doc) => doc.includes(word)).length]));
     const idf = Object.fromEntries(vocabulary.map((word) => [word, Math.log((comments.length + 1) / ((df[word] || 0) + 1)) + 1]));
@@ -229,7 +247,7 @@ export default function Home() {
           <div className={`stage ${motionEnabled ? "motion-on" : "motion-off"}`}>
             {step === 1 && <div className="panel"><PanelTitle n="01" title="학생 정보를 입력해 주세요" text="이름과 학번은 분석 결과와 함께 Google Sheets에 저장됩니다." /><label className="comment"><span>학생 이름</span><input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="예: 김민영" /></label><label className="comment"><span>학번</span><input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20101" inputMode="numeric" /></label><PanelTitle n="02" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
-            {step === 3 && <div className="panel"><PanelTitle n="03" title="불용어를 걸러냈어요" text="조사처럼 자주 나오지만 의미를 구별하기 어려운 단어를 제거해요." />{data.raw.map((words, i) => <div className="result-row" key={i}><b>댓글 {i + 1}</b><div>{words.map((word, x) => <span className={stopwords.has(word) ? "token removed" : "token mint"} key={x}>{word}</span>)}</div></div>)}</div>}
+            {step === 3 && <div className="panel"><PanelTitle n="03" title="불용어를 걸러냈어요" text="조사처럼 자주 나오지만 의미를 구별하기 어려운 단어를 제거하고, 친절하셔서·친절했습니다·친절한·친절함처럼 같은 뜻의 활용형은 친절로 묶어요." />{data.raw.map((words, i) => <div className="result-row" key={i}><b>댓글 {i + 1}</b><div>{words.map((word, x) => <span className={stopwords.has(word) ? "token removed" : "token mint"} key={x}>{stopwords.has(word) ? word : normalizeWord(word)}</span>)}</div></div>)}</div>}
             {step === 4 && <div className="panel"><div className="weight-direction tf-direction">TF <span>↑</span><small>반복 횟수가 많을수록 TF-IDF에 더 큰 영향을 줘요</small></div><PanelTitle n="04" title="TF: 단어 빈도를 세어요" text="TF(Term Frequency)는 한 댓글 안에서 단어가 몇 번 반복되었는지 보여줘요. 같은 댓글에서 2번 이상 반복된 단어는 주황색으로 강조했어요." />{data.cleaned.map((doc, i) => <div className="bar-row" key={i}><b>댓글 {i + 1}</b><div>{[...new Set(doc)].map((word) => { const count = doc.filter((w) => w === word).length; const isRepeated = count >= 2; return <span className={`bar ${isRepeated ? "repeated" : "single"} ${selectedCommon === word ? "selected-word" : ""}`} key={word} onClick={() => data.df[word] >= 2 && setSelectedCommon(word)} title={`${word}: 이 댓글에서 ${count}번 반복${isRepeated ? "된 단어" : "된 단어"}`} style={{ width: `${Math.max(64, count * 72)}px` }}>{word} <small>×{count}</small></span>; })}</div></div>)}</div>}
             {step === 5 && <div className="panel"><div className="weight-direction idf-direction">IDF <span>↓</span><small>많은 댓글에 등장할수록 IDF 가중치는 낮아져요</small></div><PanelTitle n="05" title="IDF: 희소성을 계산해요" text="포함 댓글 수(DF)가 큰 단어부터 정렬했어요. 여러 댓글에 자주 등장할수록 특별함은 낮아져요. IDF = log((문서 수 + 1) / (포함 문서 수 + 1)) + 1" /><table><thead><tr><th>단어</th><th>포함 댓글 수 (DF)</th><th>IDF</th></tr></thead><tbody>{idfRows.map((word) => <tr key={word}><td>{word}</td><td>{data.df[word]}</td><td>{data.idf[word].toFixed(2)}</td></tr>)}</tbody></table></div>}
             {step === 6 && <div className="panel"><div className="weight-direction combined-direction"><span>TF ↑</span><b>×</b><span>IDF ↓</span><strong>→ TF-IDF</strong><small>반복 빈도와 희소성 가중치가 곱해져 의미의 좌표가 돼요</small></div><PanelTitle n="06" title="TF-IDF: 의미의 좌표 만들기" text="자주 나오면서도 다른 댓글에는 드문 단어에 더 높은 점수를 줘요. 주황색은 2개 이상 댓글에 공통으로 나온 단어, 초록색은 한 댓글에만 나온 단어예요. 공통 단어를 누르면 댓글 위치가 함께 빛나요." /><div className="filter-row" role="group" aria-label="TF-IDF 차트 보기 옵션"><button className={tfidfFilter === "all" ? "selected" : ""} onClick={() => setTfidfFilter("all")}>전체 단어 보기</button><button className={tfidfFilter === "common" ? "selected" : ""} onClick={() => setTfidfFilter("common")}>공통 단어만 보기</button><button className={tfidfFilter === "top5" ? "selected" : ""} onClick={() => setTfidfFilter("top5")}>상위 5개</button><button className={tfidfFilter === "top8" ? "selected" : ""} onClick={() => setTfidfFilter("top8")}>상위 8개</button></div><div className="score-legend"><span><i className="common-swatch" /> 주황색: 공통 단어</span><span><i className="single-swatch" /> 초록색: 한 댓글에만 나온 단어</span></div><p className="chart-note">공통 단어 수: <b>{data.tfidfRows.filter((item) => item.documentCount >= 2).length}개</b> · 현재 <b>{visibleTfidfRows.length}개</b> 표시 중</p><div className="score-grid">{visibleTfidfRows.map((item) => { const explanation = item.documentCount >= 2 ? `${item.word} (TF-IDF: ${item.score.toFixed(2)}) → 댓글 ${item.documentCount}개에 공통으로 등장해 여러 댓글을 연결하는 단어예요.` : `${item.word} (TF-IDF: ${item.score.toFixed(2)}) → 한 댓글에만 등장해 그 댓글의 특징을 보여주는 단어예요.`; return <div className={`score-item ${item.documentCount >= 2 ? "common" : "single"} ${selectedCommon === item.word ? "selected-word" : ""}`} key={item.word} title={explanation} onClick={() => item.documentCount >= 2 && setSelectedCommon(selectedCommon === item.word ? "" : item.word)} role={item.documentCount >= 2 ? "button" : undefined} tabIndex={item.documentCount >= 2 ? 0 : undefined}><span>{item.word}</span><b>{item.score.toFixed(2)}</b><i style={{ height: `${35 + item.score * 34}px` }}/><em className="score-tooltip">{explanation}</em></div>; })}</div>{selectedCommon && <p className="selected-readout">✦ <b>{selectedCommon}</b>이(가) 포함된 댓글을 연결해 강조하고 있어요.</p>}{visibleTfidfRows.length === 0 && <p className="empty-filter">공통으로 등장한 단어가 아직 없어요. 전체 단어 보기를 선택해 보세요.</p>}<p className="chart-help">💡 TF-IDF 막대의 색을 함께 읽어 보세요. <b>주황색</b>은 여러 댓글에 공통으로 등장한 단어, <b>초록색</b>은 한 댓글에만 등장해 그 댓글의 특징을 보여주는 단어예요.</p></div>}
