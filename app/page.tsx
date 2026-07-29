@@ -202,15 +202,22 @@ export default function Home() {
       setSaveState("error");
       return;
     }
-    const headers = ["created_at", "session_id", "student_name", "student_id", "last_step", "comments", "vocabulary", "similarity_matrix"];
+    // 제출 기록과 같은 학생 친화적인 열 구성을 사용해, 엑셀과 제출 결과를
+    // 같은 형식으로 비교·보관할 수 있게 합니다. (session_id 등 내부 필드는
+    // Google Sheets 전송 payload에만 남겨 연동 호환성을 유지합니다.)
+    const headers = [
+      "학번", "이름", "저장 시간",
+      "댓글1", "댓글2", "댓글3", "댓글4", "댓글5", "댓글6", "댓글7",
+      "분석 단계", "분석 단어", "유사도 행렬",
+    ];
+    const savedTimestamp = savedAt || new Date().toISOString();
     const row = [
-      savedAt || new Date().toISOString(),
-      sessionId || createSessionId(),
-      studentName.trim(),
       studentId.trim(),
+      studentName.trim(),
+      new Date(savedTimestamp).toLocaleString("ko-KR"),
+      ...Array.from({ length: 7 }, (_, index) => comments[index] ?? ""),
       step,
-      JSON.stringify(comments),
-      JSON.stringify(data.vocabulary),
+      data.vocabulary.join(" · "),
       JSON.stringify(data.matrix),
     ];
     const worksheet = window.XLSX.utils.aoa_to_sheet([headers, row]);
