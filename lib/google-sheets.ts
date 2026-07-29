@@ -1,4 +1,6 @@
 export type AnalysisSessionPayload = {
+  student_name: string;
+  student_id: string;
   comments: string[];
   vocabulary: string[];
   similarity_matrix: number[][];

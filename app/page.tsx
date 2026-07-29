@@ -20,6 +20,8 @@ function tokens(text: string) {
 
 export default function Home() {
   const [comments, setComments] = useState(initial);
+  const [studentName, setStudentName] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [step, setStep] = useState(1);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState("");
@@ -39,9 +41,16 @@ export default function Home() {
 
   const update = (i: number, value: string) => setComments((prev) => prev.map((item, index) => (index === i ? value : item)));
   const saveAnalysis = async () => {
+    if (!studentName.trim() || !studentId.trim()) {
+      setSaveError("학생 이름과 학번을 먼저 입력해 주세요.");
+      setSaveState("error");
+      return;
+    }
     setSaveState("saving");
     setSaveError("");
     const result = await saveAnalysisToGoogleSheets({
+      student_name: studentName.trim(),
+      student_id: studentId.trim(),
       comments,
       vocabulary: data.vocabulary,
       similarity_matrix: data.matrix,
@@ -73,7 +82,7 @@ export default function Home() {
         <div className="workbench">
           <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button>{saveState === "saved" && <p className="save-message success">Google Sheets에 저장 요청을 보냈어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
           <div className="stage">
-            {step === 1 && <div className="panel"><PanelTitle n="01" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
+            {step === 1 && <div className="panel"><PanelTitle n="01" title="학생 정보를 입력해 주세요" text="이름과 학번은 분석 결과와 함께 Google Sheets에 저장됩니다." /><label className="comment"><span>학생 이름</span><input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="예: 김민영" /></label><label className="comment"><span>학번</span><input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20101" inputMode="numeric" /></label><PanelTitle n="02" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
             {step === 3 && <div className="panel"><PanelTitle n="03" title="불용어를 걸러냈어요" text="조사처럼 자주 나오지만 의미를 구별하기 어려운 단어를 제거해요." />{data.raw.map((words, i) => <div className="result-row" key={i}><b>댓글 {i + 1}</b><div>{words.map((word, x) => <span className={stopwords.has(word) ? "token removed" : "token mint"} key={x}>{word}</span>)}</div></div>)}</div>}
             {step === 4 && <div className="panel"><PanelTitle n="04" title="TF: 단어 빈도를 세어요" text="TF(Term Frequency)는 한 댓글 안에서 단어가 몇 번 나왔는지 보여줘요." />{data.cleaned.map((doc, i) => <div className="bar-row" key={i}><b>댓글 {i + 1}</b><div>{[...new Set(doc)].map((word) => <span className="bar" key={word} style={{ width: `${Math.max(64, doc.filter((w) => w === word).length * 72)}px` }}>{word} <small>×{doc.filter((w) => w === word).length}</small></span>)}</div></div>)}</div>}
