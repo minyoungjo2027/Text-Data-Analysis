@@ -235,6 +235,7 @@ export default function Home() {
   return (
     <main className={motionEnabled ? "motion-on" : "motion-off"}>
       <section className="hero">
+        <div className="bread-particles" aria-hidden="true" />
         <nav><div className="brand"><span className="brand-dot">⌁</span> 텍스트 데이터 분석</div><div className="nav-tools"><button className="motion-toggle" onClick={() => setMotionEnabled((enabled) => !enabled)} aria-pressed={motionEnabled}>{motionEnabled ? "✦ 애니메이션 켜짐" : "애니메이션 꺼짐"}</button><div className="nav-note">AI를 읽는 가장 쉬운 방법</div></div></nav>
         <div className="hero-grid">
           <div><p className="eyebrow">AI MATH · TEXT DATA ANALYSIS</p><h1><em>TF-IDF</em>와<br /><em>코사인 유사도</em>로<br />텍스트를 분석해요.</h1><p className="intro">인공지능 수학의 핵심 개념을 활용해 댓글을 단어와 숫자로 바꾸고, 문장 사이의 의미를 비교하는 과정을 직접 체험해요.</p><button className="primary" onClick={() => document.getElementById("lab")?.scrollIntoView({ behavior: "smooth" })}>실험 시작하기 <span>↓</span></button></div>
