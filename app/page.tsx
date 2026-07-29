@@ -6,6 +6,7 @@ import { saveAnalysisToGoogleSheets } from "../lib/google-sheets";
 declare global {
   interface Window {
     XLSX?: any;
+    html2pdf?: any;
   }
 }
 
@@ -172,6 +173,31 @@ export default function Home() {
     const safeName = studentName.trim().replace(/[\\/:*?"<>|]/g, "_");
     window.XLSX.writeFile(workbook, `${safeId}_${safeName}_텍스트데이터.xlsx`);
   };
+  const downloadPdf = async () => {
+    if (!window.html2pdf) {
+      setSaveError("PDF 라이브러리를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setSaveState("error");
+      return;
+    }
+    const report = document.getElementById("lab");
+    if (!report) return;
+    const now = new Date();
+    const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    report.classList.add("pdf-exporting");
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      await window.html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `텍스트분석_결과보고서_${date}.pdf`,
+        image: { type: "jpeg", quality: 0.96 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      }).from(report).save();
+    } finally {
+      report.classList.remove("pdf-exporting");
+    }
+  };
   const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "TF-IDF 순위", "벡터 임베딩", "유사도 히트맵", "댓글 군집화"];
 
   return (
@@ -185,11 +211,12 @@ export default function Home() {
       </section>
 
       <section className="lab" id="lab">
+        <div className="pdf-header"><h1>인공지능 수학 텍스트 분석 활동 보고서</h1><div><span>작성일시: {savedAt ? new Date(savedAt).toLocaleString("ko-KR") : new Date().toLocaleString("ko-KR")}</span><span>학생 이름: {studentName || "________________"}</span><span>학번: {studentId || "________________"}</span></div></div>
         <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 10</div></div>
         <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
 
         <div className="workbench">
-          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button><button className="primary download-button" onClick={downloadExcel}>↧ 엑셀로 다운로드</button>{saveState === "saved" && <p className="save-message success">Google Sheets와 브라우저에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
+          <aside className="pdf-hide"><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button><button className="primary pdf-button" onClick={downloadPdf}>▣ PDF 보고서 다운로드</button><button className="primary download-button" onClick={downloadExcel}>↧ 엑셀로 다운로드</button>{saveState === "saved" && <p className="save-message success">Google Sheets와 브라우저에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
           <div className="stage">
             {step === 1 && <div className="panel"><PanelTitle n="01" title="학생 정보를 입력해 주세요" text="이름과 학번은 분석 결과와 함께 Google Sheets에 저장됩니다." /><label className="comment"><span>학생 이름</span><input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="예: 김민영" /></label><label className="comment"><span>학번</span><input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20101" inputMode="numeric" /></label><PanelTitle n="02" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
@@ -201,7 +228,7 @@ export default function Home() {
             {step === 8 && <div className="panel"><PanelTitle n="08" title="표의 값을 벡터로 임베딩해요" text="TF-IDF 점수가 큰 상위 5개 단어만 남겨 5개의 성분을 가진 벡터로 만들어요. 단어를 가로축에 놓고 숫자를 순서대로 배치하면, 댓글 하나가 숫자 벡터가 됩니다." /><p className="embedding-note">상위 5개 단어: <b>{data.embeddingRows.map((item) => item.word).join(" · ") || "아직 분석할 단어가 없어요."}</b></p><div className="embedding-list">{data.embeddingVectors.map((vector, i) => <div className="embedding-row" key={i}><b>댓글 {i + 1}</b><div className="embedding-scroll"><div className="embedding-words">{data.embeddingRows.map((item) => <span key={item.word}>{item.word}</span>)}</div><div className="embedding-values">{vector.map((value, index) => <span key={`${i}-${index}`}>{value.toFixed(2)}</span>)}</div></div></div>)}</div></div>}
             {step === 9 && <div className="panel"><PanelTitle n="09" title="코사인 유사도 히트맵" text="대각선은 자기 자신과의 비교라 흰색으로 표시하고, 나머지는 파란색(낮은 유사도)에서 빨간색(높은 유사도)으로 읽어요." /><div className="heatmap" style={{ gridTemplateColumns: `repeat(${Math.max(data.matrix.length, 1)}, minmax(0, 1fr))` }}>{data.matrix.flatMap((row, i) => row.map((value, j) => { const diagonal = i === j; const intensity = Math.max(0, Math.min(1, value)); const red = Math.round(40 + intensity * 190); const blue = Math.round(215 - intensity * 170); return <div key={`${i}-${j}`} className={diagonal ? "heatmap-diagonal" : ""} style={{ background: diagonal ? "#fff" : `rgb(${red}, 92, ${blue})`, color: intensity > 0.62 && !diagonal ? "#fff" : "#14251a" }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>; }))}</div><div className="heatmap-legend"><span><i className="blue-swatch" /> 낮은 유사도</span><span><i className="red-swatch" /> 높은 유사도</span><span><i className="white-swatch" /> 자기 자신과의 비교</span></div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
             {step === 10 && <div className="panel"><PanelTitle n="10" title="댓글을 핵심 단어로 군집화해요" text="왼쪽의 댓글을 읽고, TF-IDF 점수가 높은 핵심 단어를 공유하는 댓글끼리 오른쪽 그룹으로 묶어 보았어요." /><div className="cluster-board"><div className="comment-cards"><h4>1. 댓글 분석</h4>{comments.map((comment, index) => <div className="comment-card" key={index}><span>댓글 {index + 1}</span><p>{comment || "입력된 댓글이 없습니다."}</p></div>)}</div><div className="cluster-column"><h4>2. 댓글 분류</h4>{clusterGroups.length ? clusterGroups.map((group) => <div className="cluster-card" key={group.label}><div className="cluster-heading"><b>{group.label}</b><span>{group.documentIndexes.length}개 댓글</span></div><p className="cluster-keywords">핵심 단어 {group.keywords.map((word) => <em key={word}>{word}</em>)}</p><div className="cluster-members">{group.documentIndexes.map((docIndex) => <span key={docIndex}>댓글 {docIndex + 1}</span>)}</div></div>) : <p className="empty-filter">분류할 단어가 아직 없어요. 댓글을 먼저 입력해 주세요.</p>}</div></div></div>}
-            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 10} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
+            <div className="panel-footer pdf-hide"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 10} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
           </div>
         </div>
       </section>

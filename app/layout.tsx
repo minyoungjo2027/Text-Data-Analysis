@@ -36,6 +36,10 @@ export default function RootLayout({
           src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
           strategy="afterInteractive"
         />
+        <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>
