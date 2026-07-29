@@ -42,6 +42,8 @@ aside.pdf-hide > .primary{display:block;width:100%;margin-top:0}aside.pdf-hide >
 .motion-on .cluster-comment-0:not(.largest-cluster),.motion-on .cluster-comment-1:not(.largest-cluster),.motion-on .cluster-comment-2:not(.largest-cluster){animation:none}
 .motion-on .largest-cluster{animation:clusterCommentPulse 1.15s ease-in-out infinite}
 .motion-off .largest-cluster{animation:none}
+.weight-direction{font-size:19px;font-weight:900}
+.weight-direction>small{font-size:15px;font-weight:800}
 .blue-swatch{background:#aebee2!important}
 .red-swatch{background:#74d8b9!important}
 .motion-on .heatmap-best{box-shadow:0 0 0 3px #8ff5c0,0 0 18px rgba(143,245,192,.5)}
