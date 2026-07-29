@@ -94,7 +94,7 @@ export default function Home() {
       if (session.comments?.length) {
         const comments = session.comments.map((comment, index) => {
           if (index === 0 && comment === legacyInitialComment) return initial[0];
-          if (index === 4 && comment === legacyInitialComment5) return initial[4];
+          if (index === 4 && (comment === legacyInitialComment5 || (comment.includes("성심당 자주 찾게 되네요") && !comment.includes("가격도 착해서")))) return initial[4];
           return comment;
         });
         setComments(comments);
