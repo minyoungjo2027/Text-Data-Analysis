@@ -57,6 +57,7 @@ function normalizeWord(word: string) {
     친절하게: "친절",
     친절한: "친절",
     친절함: "친절",
+    순수롤이랑: "순수롤",
   };
   return exact[word] || word;
 }
