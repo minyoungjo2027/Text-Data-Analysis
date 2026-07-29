@@ -22,6 +22,7 @@ export default function Home() {
   const [comments, setComments] = useState(initial);
   const [step, setStep] = useState(1);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState("");
   const data = useMemo(() => {
     const raw = comments.map(tokens);
     const cleaned = raw.map((words) => words.filter((word) => !stopwords.has(word)));
@@ -39,17 +40,24 @@ export default function Home() {
   const update = (i: number, value: string) => setComments((prev) => prev.map((item, index) => (index === i ? value : item)));
   const saveAnalysis = async () => {
     if (!supabase) {
+      setSaveError("Supabase 환경변수가 없습니다.");
       setSaveState("error");
       return;
     }
     setSaveState("saving");
+    setSaveError("");
     const { error } = await supabase.from("analysis_sessions").insert({
       comments,
       vocabulary: data.vocabulary,
       similarity_matrix: data.matrix,
       last_step: step,
     });
-    setSaveState(error ? "error" : "saved");
+    if (error) {
+      setSaveError(error.code === "PGRST205" ? "analysis_sessions 테이블이 없습니다. supabase/schema.sql을 SQL Editor에서 실행해 주세요." : error.message);
+      setSaveState("error");
+    } else {
+      setSaveState("saved");
+    }
   };
   const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "유사도"];
 
@@ -68,7 +76,7 @@ export default function Home() {
         <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
 
         <div className="workbench">
-          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button>{saveState === "saved" && <p className="save-message success">Supabase에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">저장에 실패했어요. Supabase 테이블 설정을 확인해 주세요.</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
+          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button>{saveState === "saved" && <p className="save-message success">Supabase에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
           <div className="stage">
             {step === 1 && <div className="panel"><PanelTitle n="01" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}

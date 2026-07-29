@@ -9,6 +9,8 @@ create table if not exists public.analysis_sessions (
 
 alter table public.analysis_sessions enable row level security;
 
+grant select, insert on table public.analysis_sessions to anon, authenticated;
+
 drop policy if exists "anonymous users can save analysis sessions" on public.analysis_sessions;
 create policy "anonymous users can save analysis sessions"
   on public.analysis_sessions for insert
