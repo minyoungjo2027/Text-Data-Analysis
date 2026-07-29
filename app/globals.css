@@ -16,6 +16,25 @@ aside.pdf-hide > .primary{display:block;width:100%;margin-top:0}aside.pdf-hide >
 .embedding-row>b{font-size:11px;color:#777;padding-top:28px}
 .embedding-scroll{overflow-x:auto;padding-bottom:6px}
 .embedding-words,.embedding-values{display:grid;grid-auto-columns:minmax(62px,1fr);grid-auto-flow:column;min-width:max-content}
+
+/* Emotional Tech landing visual */
+.hero{position:relative;isolation:isolate;background:#12131a;overflow:hidden}
+.hero::before{content:"";position:absolute;z-index:0;right:-12%;top:4%;width:62%;height:92%;background:radial-gradient(circle at 38% 42%,rgba(143,245,192,.24),transparent 34%),radial-gradient(circle at 72% 34%,rgba(162,210,255,.22),transparent 31%),radial-gradient(circle at 55% 76%,rgba(192,156,255,.2),transparent 36%);filter:blur(26px);pointer-events:none}
+.hero::after{content:"";position:absolute;z-index:0;inset:0;background:linear-gradient(110deg,rgba(18,19,26,.96) 0%,rgba(18,19,26,.8) 43%,rgba(18,19,26,.35) 100%);pointer-events:none}
+.hero-grid, .hero nav{position:relative;z-index:1}
+.hero .brand-dot,.hero .eyebrow{color:#8ff5c0}
+.hero h1 em{background:linear-gradient(110deg,#8ff5c0 5%,#a2d2ff 92%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 28px rgba(143,245,192,.16)}
+.hero .intro{color:#c3cbd3}
+.hero .primary{background:linear-gradient(110deg,#8ff5c0,#a2d2ff);box-shadow:0 12px 34px rgba(143,245,192,.22),0 0 34px rgba(162,210,255,.12);transition:transform .25s ease,box-shadow .25s ease}
+.hero .primary:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(143,245,192,.32),0 0 42px rgba(162,210,255,.2)}
+.hero-art{filter:drop-shadow(0 0 32px rgba(143,245,192,.12))}
+.hero-art .core{background:linear-gradient(145deg,#8ff5c0,#a2d2ff);color:#16232b;box-shadow:0 0 42px rgba(143,245,192,.5),0 0 100px rgba(162,210,255,.24);text-shadow:0 1px 0 rgba(255,255,255,.45)}
+.hero-art .orbit{border-color:rgba(180,220,225,.28);box-shadow:0 0 18px rgba(143,245,192,.08)}
+.hero-art .float{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:999px;color:#e8f7f3;box-shadow:0 8px 26px rgba(0,0,0,.18),0 0 20px rgba(143,245,192,.08)}
+.hero-art::before,.hero-art::after{color:#a2d2ff}
+.hero .nav-note{color:#aebac5}
+.hero .motion-toggle{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#d8e5e4}
+.hero .motion-toggle[aria-pressed="true"]{border-color:rgba(143,245,192,.65);color:#bff8d7;box-shadow:0 0 18px rgba(143,245,192,.12)}
 .embedding-words span{font-size:11px;font-weight:800;color:#168a43;text-align:center;padding:7px 5px;background:#e7f8ed;border-radius:5px 5px 0 0}
 .embedding-values span{font-size:11px;text-align:center;padding:9px 5px;border:1px solid #e6eee8;border-top:0}
 .embedding-note{margin:-7px 0 22px;padding:10px 12px;background:#f5faf6;color:#42614c;font-size:12px;line-height:1.5}.embedding-note b{color:#168a43}
