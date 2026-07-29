@@ -37,7 +37,8 @@ function tokens(text: string) {
     .filter((word) => word.length > 1)
     .map((word) => word.toLowerCase())
     .flatMap((word) => {
-      const particle = attachedParticles.find((suffix) => word.endsWith(suffix) && word.length - suffix.length >= 2);
+      // 한 글자 명사도 조사와 분리합니다. 예: "빵은" → "빵" + "은"
+      const particle = attachedParticles.find((suffix) => word.endsWith(suffix) && word.length - suffix.length >= 1);
       return particle ? [word.slice(0, -particle.length), particle] : [word];
     });
 }
