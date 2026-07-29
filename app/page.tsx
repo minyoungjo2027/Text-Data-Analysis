@@ -21,6 +21,7 @@ const initial = [
   "성심당 순수롤이랑 망고시루 둘 다 사서 먹었는데 순수롤이 생각보다 훨씬 부드럽고 순수롤 달콤해요. 순수롤 강력 추천합니다!",
   "성심당 친절한 응대 덕분에 구매할 때 기분이 좋았어요. 역시 친절이 기본이 되는 매장이라 친절함에 반해서 성심당 자주 찾게 되네요.",
 ];
+const legacyInitialComment = "성심당 망고시루 진짜 최고예요! 망고시루 살 때 직원분도 너무 친절하셔서 감동했어요. 다음에도 망고시루 사러 친절한 성심당 또 갈게요.";
 const STORAGE_KEY = "textlab-analysis-session";
 type TfidfFilter = "all" | "common" | "top5" | "top8";
 
@@ -84,7 +85,13 @@ export default function Home() {
       const session = JSON.parse(stored) as { studentName?: string; studentId?: string; comments?: string[]; savedAt?: string; sessionId?: string };
       if (session.studentName) setStudentName(session.studentName);
       if (session.studentId) setStudentId(session.studentId);
-      if (session.comments?.length) setComments(session.comments);
+      if (session.comments?.length) {
+        const comments = session.comments.map((comment, index) => index === 0 && comment === legacyInitialComment ? initial[0] : comment);
+        setComments(comments);
+        if (comments[0] !== session.comments[0]) {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...session, comments }));
+        }
+      }
       if (session.savedAt) setSavedAt(session.savedAt);
       setSessionId(session.sessionId || createSessionId());
     } catch {
