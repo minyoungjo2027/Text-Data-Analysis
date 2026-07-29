@@ -204,7 +204,7 @@ export default function Home() {
   const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "TF-IDF 순위", "벡터 임베딩", "유사도 히트맵", "댓글 군집화"];
 
   return (
-    <main>
+    <main className={motionEnabled ? "motion-on" : "motion-off"}>
       <section className="hero">
         <nav><div className="brand"><span className="brand-dot">⌁</span> 텍스트랩</div><div className="nav-tools"><button className="motion-toggle" onClick={() => setMotionEnabled((enabled) => !enabled)} aria-pressed={motionEnabled}>{motionEnabled ? "✦ 애니메이션 켜짐" : "애니메이션 꺼짐"}</button><div className="nav-note">AI를 읽는 가장 쉬운 방법</div></div></nav>
         <div className="hero-grid">
