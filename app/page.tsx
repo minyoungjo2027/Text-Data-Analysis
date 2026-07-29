@@ -92,6 +92,19 @@ export default function Home() {
     if (tfidfFilter === "top8") return index < 8;
     return true;
   });
+  const clusterGroups = useMemo(() => {
+    const candidates = (data.tfidfRows.filter((item) => item.documentCount >= 2).length ? data.tfidfRows.filter((item) => item.documentCount >= 2) : data.tfidfRows).slice(0, 3);
+    const assigned = new Set<number>();
+    const groups = candidates.map((item, index) => {
+      const documentIndexes = data.cleaned.map((doc, docIndex) => doc.includes(item.word) ? docIndex : -1).filter((docIndex) => docIndex >= 0 && !assigned.has(docIndex));
+      documentIndexes.forEach((docIndex) => assigned.add(docIndex));
+      const keywords = data.tfidfRows.filter((row) => documentIndexes.some((docIndex) => row.values[docIndex] > 0)).slice(0, 4).map((row) => row.word);
+      return { label: `${String.fromCharCode(65 + index)} 그룹`, word: item.word, documentIndexes, keywords };
+    }).filter((group) => group.documentIndexes.length > 0);
+    const remaining = comments.map((_, index) => index).filter((index) => !assigned.has(index));
+    if (remaining.length) groups.push({ label: "기타 그룹", word: "기타", documentIndexes: remaining, keywords: data.tfidfRows.filter((row) => remaining.some((docIndex) => row.values[docIndex] > 0)).slice(0, 4).map((row) => row.word) });
+    return groups;
+  }, [comments, data]);
 
   const update = (i: number, value: string) => setComments((prev) => prev.map((item, index) => (index === i ? value : item)));
   const saveAnalysis = async () => {
@@ -159,7 +172,7 @@ export default function Home() {
     const safeName = studentName.trim().replace(/[\\/:*?"<>|]/g, "_");
     window.XLSX.writeFile(workbook, `${safeId}_${safeName}_텍스트데이터.xlsx`);
   };
-  const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "TF-IDF 순위", "벡터 임베딩", "유사도 히트맵"];
+  const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "TF-IDF 순위", "벡터 임베딩", "유사도 히트맵", "댓글 군집화"];
 
   return (
     <main>
@@ -172,7 +185,7 @@ export default function Home() {
       </section>
 
       <section className="lab" id="lab">
-        <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 9</div></div>
+        <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 10</div></div>
         <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
 
         <div className="workbench">
@@ -186,8 +199,9 @@ export default function Home() {
             {step === 6 && <div className="panel"><PanelTitle n="06" title="TF-IDF: 의미의 좌표 만들기" text="자주 나오면서도 다른 댓글에는 드문 단어에 더 높은 점수를 줘요. 공통 단어는 진한 색, 한 댓글에만 나온 단어는 연한 색으로 표시했어요." /><div className="filter-row" role="group" aria-label="TF-IDF 차트 보기 옵션"><button className={tfidfFilter === "all" ? "selected" : ""} onClick={() => setTfidfFilter("all")}>전체 단어 보기</button><button className={tfidfFilter === "common" ? "selected" : ""} onClick={() => setTfidfFilter("common")}>공통 단어만 보기</button><button className={tfidfFilter === "top5" ? "selected" : ""} onClick={() => setTfidfFilter("top5")}>상위 5개</button><button className={tfidfFilter === "top8" ? "selected" : ""} onClick={() => setTfidfFilter("top8")}>상위 8개</button></div><p className="chart-note">공통 단어 수: <b>{data.tfidfRows.filter((item) => item.documentCount >= 2).length}개</b> · 현재 <b>{visibleTfidfRows.length}개</b> 표시 중</p><div className="score-grid">{visibleTfidfRows.map((item) => { const explanation = `${item.word} (TF-IDF: ${item.score.toFixed(2)}) → 댓글 ${item.documentCount}개에 공통으로 등장${item.documentCount >= 2 ? "하여 여러 문장을 연결하는 단어예요." : "하여 이 댓글만의 특징을 보여주는 단어예요."}`; return <div className={`score-item ${item.documentCount >= 2 ? "common" : "single"}`} key={item.word} title={explanation}><span>{item.word}</span><b>{item.score.toFixed(2)}</b><i style={{ height: `${35 + item.score * 34}px` }}/><em className="score-tooltip">{explanation}</em></div>; })}</div>{visibleTfidfRows.length === 0 && <p className="empty-filter">공통으로 등장한 단어가 아직 없어요. 전체 단어 보기를 선택해 보세요.</p>}<p className="chart-help">💡 TF가 같아도 여러 댓글에 걸쳐 등장하는 단어와 한 댓글에서만 중요한 단어는 역할이 달라요. 색상과 필터로 두 특징을 비교해 보세요.</p></div>}
             {step === 7 && <div className="panel"><PanelTitle n="07" title="TF-IDF 값이 큰 순서로 정리해요" text="각 단어가 댓글을 대표하는 정도를 비교할 수 있도록 가장 큰 TF-IDF 값부터 나열했어요." /><table><thead><tr><th>순위</th><th>단어</th><th>가장 큰 TF-IDF</th><th>댓글별 값</th></tr></thead><tbody>{data.tfidfRows.map((item, index) => <tr key={item.word}><td>{index + 1}</td><td><b>{item.word}</b></td><td>{item.score.toFixed(2)}</td><td>{item.values.map((value, i) => `댓글 ${i + 1}: ${value.toFixed(2)}`).join(" · ")}</td></tr>)}</tbody></table></div>}
             {step === 8 && <div className="panel"><PanelTitle n="08" title="표의 값을 벡터로 임베딩해요" text="TF-IDF 점수가 큰 상위 5개 단어만 남겨 5개의 성분을 가진 벡터로 만들어요. 단어를 가로축에 놓고 숫자를 순서대로 배치하면, 댓글 하나가 숫자 벡터가 됩니다." /><p className="embedding-note">상위 5개 단어: <b>{data.embeddingRows.map((item) => item.word).join(" · ") || "아직 분석할 단어가 없어요."}</b></p><div className="embedding-list">{data.embeddingVectors.map((vector, i) => <div className="embedding-row" key={i}><b>댓글 {i + 1}</b><div className="embedding-scroll"><div className="embedding-words">{data.embeddingRows.map((item) => <span key={item.word}>{item.word}</span>)}</div><div className="embedding-values">{vector.map((value, index) => <span key={`${i}-${index}`}>{value.toFixed(2)}</span>)}</div></div></div>)}</div></div>}
-            {step === 9 && <div className="panel"><PanelTitle n="09" title="코사인 유사도 히트맵" text="두 댓글의 단어 방향이 비슷할수록 1에 가까워져요." /><div className="heatmap" style={{ gridTemplateColumns: `repeat(${Math.max(data.matrix.length, 1)}, minmax(0, 1fr))` }}>{data.matrix.flatMap((row, i) => row.map((value, j) => <div key={`${i}-${j}`} style={{ background: `rgba(29, 185, 84, ${0.12 + value * 0.88})` }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>))}</div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
-            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 9} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
+            {step === 9 && <div className="panel"><PanelTitle n="09" title="코사인 유사도 히트맵" text="대각선은 자기 자신과의 비교라 흰색으로 표시하고, 나머지는 파란색(낮은 유사도)에서 빨간색(높은 유사도)으로 읽어요." /><div className="heatmap" style={{ gridTemplateColumns: `repeat(${Math.max(data.matrix.length, 1)}, minmax(0, 1fr))` }}>{data.matrix.flatMap((row, i) => row.map((value, j) => { const diagonal = i === j; const intensity = Math.max(0, Math.min(1, value)); const red = Math.round(40 + intensity * 190); const blue = Math.round(215 - intensity * 170); return <div key={`${i}-${j}`} className={diagonal ? "heatmap-diagonal" : ""} style={{ background: diagonal ? "#fff" : `rgb(${red}, 92, ${blue})`, color: intensity > 0.62 && !diagonal ? "#fff" : "#14251a" }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>; }))}</div><div className="heatmap-legend"><span><i className="blue-swatch" /> 낮은 유사도</span><span><i className="red-swatch" /> 높은 유사도</span><span><i className="white-swatch" /> 자기 자신과의 비교</span></div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
+            {step === 10 && <div className="panel"><PanelTitle n="10" title="댓글을 핵심 단어로 군집화해요" text="왼쪽의 댓글을 읽고, TF-IDF 점수가 높은 핵심 단어를 공유하는 댓글끼리 오른쪽 그룹으로 묶어 보았어요." /><div className="cluster-board"><div className="comment-cards"><h4>1. 댓글 분석</h4>{comments.map((comment, index) => <div className="comment-card" key={index}><span>댓글 {index + 1}</span><p>{comment || "입력된 댓글이 없습니다."}</p></div>)}</div><div className="cluster-column"><h4>2. 댓글 분류</h4>{clusterGroups.length ? clusterGroups.map((group) => <div className="cluster-card" key={group.label}><div className="cluster-heading"><b>{group.label}</b><span>{group.documentIndexes.length}개 댓글</span></div><p className="cluster-keywords">핵심 단어 {group.keywords.map((word) => <em key={word}>{word}</em>)}</p><div className="cluster-members">{group.documentIndexes.map((docIndex) => <span key={docIndex}>댓글 {docIndex + 1}</span>)}</div></div>) : <p className="empty-filter">분류할 단어가 아직 없어요. 댓글을 먼저 입력해 주세요.</p>}</div></div></div>}
+            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 10} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
           </div>
         </div>
       </section>
