@@ -9,7 +9,10 @@ declare global {
   }
 }
 
-const stopwords = new Set(["은", "는", "이", "가", "을", "를", "에", "의", "와", "과", "도", "그리고", "하지만", "정말", "너무", "있다", "하다", "좋다"]);
+const stopwords = new Set([
+  "은", "는", "이", "가", "을", "를", "에", "의", "와", "과", "도", "으로", "로", "에서", "에게", "한테", "께", "부터", "까지", "보다", "처럼", "만큼", "조차", "마저", "밖에", "뿐", "마다", "라고", "이라", "하고", "하며", "그리고", "하지만", "그러나", "그래서", "또한", "정말", "너무", "매우", "아주", "잘", "더", "가장", "있다", "있는", "있고", "하다", "하는", "한", "좋다", "좋은", "것", "수", "등", "및", "또", "안", "못", "않다", "어떤", "이런", "저런", "그런", "모든", "각", "여러", "다른", "한", "두"
+]);
+const attachedParticles = ["으로", "에서", "에게", "한테", "까지", "부터", "처럼", "만큼", "보다", "이라", "라고", "하고", "은", "는", "이", "가", "을", "를", "에", "의", "와", "과", "도", "로", "만"].sort((a, b) => b.length - a.length);
 const initial = [
   "AI 수업에서 직접 단어를 분석해 보니 신기하고 재미있어요!",
   "텍스트 데이터를 숫자로 바꾸는 과정이 궁금했어요.",
@@ -29,7 +32,11 @@ function tokens(text: string) {
     .replace(/[^가-힣a-zA-Z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((word) => word.length > 1)
-    .map((word) => word.toLowerCase());
+    .map((word) => word.toLowerCase())
+    .flatMap((word) => {
+      const particle = attachedParticles.find((suffix) => word.endsWith(suffix) && word.length - suffix.length >= 2);
+      return particle ? [word.slice(0, -particle.length), particle] : [word];
+    });
 }
 
 export default function Home() {
