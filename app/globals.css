@@ -116,6 +116,14 @@ aside.pdf-hide>.pdf-button{background:linear-gradient(110deg,#e6b7c2,#d59bb0);co
 aside.pdf-hide>.download-button{background:linear-gradient(110deg,#ead39a,#d9b878);color:#30220f}
 aside.pdf-hide .tip{border-top-color:#684a38;color:#f0b878}
 aside.pdf-hide .tip span{color:#ead6c3}
+
+/* Landing-page polish: keep the planet visual quiet while the key concepts sparkle. */
+.hero-art .core{display:block}
+.hero-art .float{font-size:15px}
+.hero-art .sparkle{position:absolute;color:#e8b276;font-size:20px;line-height:1;opacity:.2;animation:twinkle 2.8s ease-in-out infinite;pointer-events:none}
+.hero-art .s1{top:34px;left:116px;animation-delay:.35s}
+.hero-art .s2{top:188px;right:6px;font-size:15px;animation-delay:1.15s}
+.hero-art .s3{bottom:34px;left:92px;font-size:17px;animation-delay:1.9s}
 .stage{position:relative}
 .stage>.panel{padding-right:145px}
 .stage>.panel-footer{position:absolute;top:38px;right:38px;z-index:5;display:flex;flex-direction:column;justify-content:flex-start;gap:9px;margin:0;padding:0;border:0;width:112px}
