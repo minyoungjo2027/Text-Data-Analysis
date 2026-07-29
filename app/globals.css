@@ -72,6 +72,12 @@ body{background:#f1eee7;color:#171513;font-family:Arial,"Malgun Gothic",sans-ser
 .hero-art .orbit{border-color:rgba(213,184,137,.48);box-shadow:none}
 .hero-art .float{border:1px solid rgba(208,183,143,.55);background:#151310;backdrop-filter:none;color:#ead9bd;border-radius:2px;box-shadow:none;text-transform:uppercase;letter-spacing:.5px}
 .hero-art::before,.hero-art::after{color:#c79d62}
+.heatmap-layout{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:24px;align-items:center}
+.cosine-visuals{display:grid;gap:12px;padding:12px;background:#fbf7ef;border:1px solid #e3d8c8;border-radius:4px}
+.cosine-visuals figure{margin:0;text-align:center}
+.cosine-visuals img{display:block;width:100%;height:auto;max-height:145px;object-fit:contain;background:#fff}
+.cosine-visuals figcaption{margin-top:6px;color:#756754;font-size:10px;line-height:1.4}
+@media(max-width:780px){.heatmap-layout{grid-template-columns:1fr}.cosine-visuals{grid-template-columns:1fr 1fr}.cosine-visuals figcaption{font-size:9px}}
 .lab{background:#f1eee7;max-width:none;padding-top:76px;position:relative}
 .lab:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.3;background-image:radial-gradient(#bdb5a9 0.55px,transparent .55px);background-size:7px 7px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.38),transparent 72%)}
 .lab>*{position:relative}
