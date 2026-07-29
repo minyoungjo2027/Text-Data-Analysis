@@ -1,7 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { saveAnalysisToGoogleSheets } from "../lib/google-sheets";
+
+declare global {
+  interface Window {
+    XLSX?: any;
+  }
+}
 
 const stopwords = new Set(["은", "는", "이", "가", "을", "를", "에", "의", "와", "과", "도", "그리고", "하지만", "정말", "너무", "있다", "하다", "좋다"]);
 const initial = [
@@ -9,6 +15,7 @@ const initial = [
   "텍스트 데이터를 숫자로 바꾸는 과정이 궁금했어요.",
   "친구들과 비슷한 생각을 했는지 비교해 보고 싶어요.",
 ];
+const STORAGE_KEY = "textlab-analysis-session";
 
 function tokens(text: string) {
   return text
@@ -25,6 +32,21 @@ export default function Home() {
   const [step, setStep] = useState(1);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState("");
+  const [savedAt, setSavedAt] = useState("");
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (!stored) return;
+    try {
+      const session = JSON.parse(stored) as { studentName?: string; studentId?: string; comments?: string[]; savedAt?: string };
+      if (session.studentName) setStudentName(session.studentName);
+      if (session.studentId) setStudentId(session.studentId);
+      if (session.comments?.length) setComments(session.comments);
+      if (session.savedAt) setSavedAt(session.savedAt);
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
   const data = useMemo(() => {
     const raw = comments.map(tokens);
     const cleaned = raw.map((words) => words.filter((word) => !stopwords.has(word)));
@@ -48,6 +70,14 @@ export default function Home() {
     }
     setSaveState("saving");
     setSaveError("");
+    const timestamp = new Date().toISOString();
+    setSavedAt(timestamp);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      studentName: studentName.trim(),
+      studentId: studentId.trim(),
+      comments,
+      savedAt: timestamp,
+    }));
     const result = await saveAnalysisToGoogleSheets({
       student_name: studentName.trim(),
       student_id: studentId.trim(),
@@ -62,6 +92,27 @@ export default function Home() {
     } else {
       setSaveState("saved");
     }
+  };
+  const downloadExcel = () => {
+    if (!studentName.trim() || !studentId.trim()) {
+      setSaveError("학생 이름과 학번을 먼저 입력해 주세요.");
+      setSaveState("error");
+      return;
+    }
+    if (!window.XLSX) {
+      setSaveError("엑셀 라이브러리를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setSaveState("error");
+      return;
+    }
+    const headers = ["학번", "이름", "저장 시간", "댓글1", "댓글2", "댓글3", "댓글4", "댓글5", "댓글6", "댓글7"];
+    const row = [studentId.trim(), studentName.trim(), savedAt || new Date().toISOString(), ...comments.slice(0, 7)];
+    while (row.length < headers.length) row.push("");
+    const worksheet = window.XLSX.utils.aoa_to_sheet([headers, row]);
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, worksheet, "텍스트 데이터");
+    const safeId = studentId.trim().replace(/[\\/:*?"<>|]/g, "_");
+    const safeName = studentName.trim().replace(/[\\/:*?"<>|]/g, "_");
+    window.XLSX.writeFile(workbook, `${safeId}_${safeName}_텍스트데이터.xlsx`);
   };
   const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "유사도"];
 
@@ -80,7 +131,7 @@ export default function Home() {
         <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
 
         <div className="workbench">
-          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button>{saveState === "saved" && <p className="save-message success">Google Sheets에 저장 요청을 보냈어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
+          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button><button className="primary" onClick={downloadExcel}>↧ 엑셀로 다운로드</button>{saveState === "saved" && <p className="save-message success">Google Sheets와 브라우저에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
           <div className="stage">
             {step === 1 && <div className="panel"><PanelTitle n="01" title="학생 정보를 입력해 주세요" text="이름과 학번은 분석 결과와 함께 Google Sheets에 저장됩니다." /><label className="comment"><span>학생 이름</span><input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="예: 김민영" /></label><label className="comment"><span>학번</span><input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20101" inputMode="numeric" /></label><PanelTitle n="02" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
