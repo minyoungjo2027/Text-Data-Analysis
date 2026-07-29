@@ -58,7 +58,11 @@ export default function Home() {
       const denom = Math.sqrt(a.reduce((s, v) => s + v * v, 0)) * Math.sqrt(b.reduce((s, v) => s + v * v, 0));
       return denom ? a.reduce((s, v, i) => s + v * b[i], 0) / denom : 0;
     };
-    return { raw, cleaned, vocabulary, df, idf, vectors, matrix: vectors.map((a) => vectors.map((b) => cosine(a, b))) };
+    const tfidfRows = vocabulary.map((word, index) => {
+      const values = vectors.map((vector) => vector[index]);
+      return { word, values, score: Math.max(0, ...values) };
+    }).sort((a, b) => b.score - a.score);
+    return { raw, cleaned, vocabulary, df, idf, vectors, tfidfRows, matrix: vectors.map((a) => vectors.map((b) => cosine(a, b))) };
   }, [comments]);
 
   const update = (i: number, value: string) => setComments((prev) => prev.map((item, index) => (index === i ? value : item)));
@@ -114,7 +118,7 @@ export default function Home() {
     const safeName = studentName.trim().replace(/[\\/:*?"<>|]/g, "_");
     window.XLSX.writeFile(workbook, `${safeId}_${safeName}_텍스트데이터.xlsx`);
   };
-  const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "유사도"];
+  const cards = ["댓글 입력", "형태소 분석", "불용어 제거", "TF", "IDF", "TF-IDF", "TF-IDF 순위", "벡터 임베딩", "유사도 히트맵"];
 
   return (
     <main>
@@ -127,11 +131,11 @@ export default function Home() {
       </section>
 
       <section className="lab" id="lab">
-        <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 7</div></div>
+        <div className="section-heading"><div><p className="eyebrow">LEARNING LAB</p><h2>한 단계씩, AI의 생각을 따라가기</h2></div><div className="progress">STEP <b>{step}</b> / 9</div></div>
         <div className="stepper">{cards.map((label, index) => <button key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
 
         <div className="workbench">
-          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button><button className="primary" onClick={downloadExcel}>↧ 엑셀로 다운로드</button>{saveState === "saved" && <p className="save-message success">Google Sheets와 브라우저에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
+          <aside><p className="side-label">오늘의 미션</p><h3>우리 반의 AI 수업<br/>후기를 분석해 볼까요?</h3><p>댓글을 바꾸면 모든 결과가 즉시 새로 계산돼요.</p><button className="primary" onClick={saveAnalysis} disabled={saveState === "saving"}>{saveState === "saving" ? "저장 중..." : "☁ 분석 결과 저장"}</button><button className="primary download-button" onClick={downloadExcel}>↧ 엑셀로 다운로드</button>{saveState === "saved" && <p className="save-message success">Google Sheets와 브라우저에 저장했어요.</p>}{saveState === "error" && <p className="save-message error">{saveError || "저장에 실패했어요."}</p>}<div className="tip">✦ <span>Okt처럼 문장을 단어 단위로 나누는 원리를 간단히 체험합니다.</span></div></aside>
           <div className="stage">
             {step === 1 && <div className="panel"><PanelTitle n="01" title="학생 정보를 입력해 주세요" text="이름과 학번은 분석 결과와 함께 Google Sheets에 저장됩니다." /><label className="comment"><span>학생 이름</span><input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="예: 김민영" /></label><label className="comment"><span>학번</span><input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20101" inputMode="numeric" /></label><PanelTitle n="02" title="댓글을 입력해 주세요" text="서로 다른 문장 3개를 비교하면 AI가 공통점과 차이를 더 잘 찾아낼 수 있어요." />{comments.map((comment, i) => <label className="comment" key={i}><span>댓글 {i + 1}</span><textarea value={comment} onChange={(e) => update(i, e.target.value)} /></label>)}<button className="add" onClick={() => setComments([...comments, "새로운 댓글을 입력해 보세요."])}>+ 댓글 추가</button></div>}
             {step === 2 && <div className="panel"><PanelTitle n="02" title="형태소 분석 결과" text="Okt 형태소 분석기는 문장을 의미 있는 단어 조각으로 나눠요." />{data.raw.map((words, i) => <ResultRow key={i} index={i} words={words} color="mint" />)}</div>}
@@ -139,8 +143,10 @@ export default function Home() {
             {step === 4 && <div className="panel"><PanelTitle n="04" title="TF: 단어 빈도를 세어요" text="TF(Term Frequency)는 한 댓글 안에서 단어가 몇 번 나왔는지 보여줘요." />{data.cleaned.map((doc, i) => <div className="bar-row" key={i}><b>댓글 {i + 1}</b><div>{[...new Set(doc)].map((word) => <span className="bar" key={word} style={{ width: `${Math.max(64, doc.filter((w) => w === word).length * 72)}px` }}>{word} <small>×{doc.filter((w) => w === word).length}</small></span>)}</div></div>)}</div>}
             {step === 5 && <div className="panel"><PanelTitle n="05" title="IDF: 희소성을 계산해요" text="여러 댓글에 자주 등장할수록 특별함은 낮아져요. IDF = log((문서 수 + 1) / (포함 문서 수 + 1)) + 1" /><table><thead><tr><th>단어</th><th>포함 댓글 수 (DF)</th><th>IDF</th></tr></thead><tbody>{data.vocabulary.map((word) => <tr key={word}><td>{word}</td><td>{data.df[word]}</td><td>{data.idf[word].toFixed(2)}</td></tr>)}</tbody></table></div>}
             {step === 6 && <div className="panel"><PanelTitle n="06" title="TF-IDF: 의미의 좌표 만들기" text="자주 나오면서도 다른 댓글에는 드문 단어에 더 높은 점수를 줘요." /><div className="score-grid">{data.vocabulary.map((word) => <div key={word}><span>{word}</span><b>{Math.max(...data.vectors.map((v) => v[data.vocabulary.indexOf(word)])).toFixed(2)}</b><i style={{ height: `${35 + Math.max(...data.vectors.map((v) => v[data.vocabulary.indexOf(word)])) * 34}px` }}/></div>)}</div></div>}
-            {step === 7 && <div className="panel"><PanelTitle n="07" title="코사인 유사도 히트맵" text="두 댓글의 단어 방향이 비슷할수록 1에 가까워져요." /><div className="heatmap">{data.matrix.flatMap((row, i) => row.map((value, j) => <div key={`${i}-${j}`} style={{ background: `rgba(29, 185, 84, ${0.12 + value * 0.88})` }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>))}</div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
-            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 7} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
+            {step === 7 && <div className="panel"><PanelTitle n="07" title="TF-IDF 값이 큰 순서로 정리해요" text="각 단어가 댓글을 대표하는 정도를 비교할 수 있도록 가장 큰 TF-IDF 값부터 나열했어요." /><table><thead><tr><th>순위</th><th>단어</th><th>가장 큰 TF-IDF</th><th>댓글별 값</th></tr></thead><tbody>{data.tfidfRows.map((item, index) => <tr key={item.word}><td>{index + 1}</td><td><b>{item.word}</b></td><td>{item.score.toFixed(2)}</td><td>{item.values.map((value, i) => `댓글 ${i + 1}: ${value.toFixed(2)}`).join(" · ")}</td></tr>)}</tbody></table></div>}
+            {step === 8 && <div className="panel"><PanelTitle n="08" title="표의 값을 벡터로 임베딩해요" text="단어를 가로축에 놓고 숫자를 순서대로 배치하면, 댓글 하나가 숫자 벡터가 됩니다." /><div className="embedding-list">{data.vectors.map((vector, i) => <div className="embedding-row" key={i}><b>댓글 {i + 1}</b><div className="embedding-scroll"><div className="embedding-words">{data.vocabulary.map((word) => <span key={word}>{word}</span>)}</div><div className="embedding-values">{vector.map((value, index) => <span key={`${i}-${index}`}>{value.toFixed(2)}</span>)}</div></div></div>)}</div></div>}
+            {step === 9 && <div className="panel"><PanelTitle n="09" title="코사인 유사도 히트맵" text="두 댓글의 단어 방향이 비슷할수록 1에 가까워져요." /><div className="heatmap" style={{ gridTemplateColumns: `repeat(${Math.max(data.matrix.length, 1)}, minmax(0, 1fr))` }}>{data.matrix.flatMap((row, i) => row.map((value, j) => <div key={`${i}-${j}`} style={{ background: `rgba(29, 185, 84, ${0.12 + value * 0.88})` }}><small>{i + 1} · {j + 1}</small><b>{value.toFixed(2)}</b></div>))}</div><p className="readout">가장 비슷한 문장 쌍: <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.i + 1 || 1}</b>와 <b>댓글 {data.matrix.flatMap((row, i) => row.map((v, j) => ({ v, i, j }))).filter((x) => x.i !== x.j).sort((a,b) => b.v-a.v)[0]?.j + 1 || 2}</b></p></div>}
+            <div className="panel-footer"><button disabled={step === 1} onClick={() => setStep(step - 1)}>← 이전</button><button className="next" disabled={step === 9} onClick={() => setStep(step + 1)}>다음 단계 →</button></div>
           </div>
         </div>
       </section>
