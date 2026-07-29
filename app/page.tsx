@@ -18,6 +18,12 @@ const initial = [
 const STORAGE_KEY = "textlab-analysis-session";
 type TfidfFilter = "all" | "common" | "top5" | "top8";
 
+function createSessionId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function tokens(text: string) {
   return text
     .replace(/[^가-힣a-zA-Z0-9\s]/g, " ")
@@ -34,20 +40,24 @@ export default function Home() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState("");
   const [savedAt, setSavedAt] = useState("");
+  const [sessionId, setSessionId] = useState("");
   const [tfidfFilter, setTfidfFilter] = useState<TfidfFilter>("all");
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return;
     try {
-      const session = JSON.parse(stored) as { studentName?: string; studentId?: string; comments?: string[]; savedAt?: string };
+      const session = JSON.parse(stored) as { studentName?: string; studentId?: string; comments?: string[]; savedAt?: string; sessionId?: string };
       if (session.studentName) setStudentName(session.studentName);
       if (session.studentId) setStudentId(session.studentId);
       if (session.comments?.length) setComments(session.comments);
       if (session.savedAt) setSavedAt(session.savedAt);
+      setSessionId(session.sessionId || createSessionId());
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
+      setSessionId(createSessionId());
     }
+    if (!stored) setSessionId(createSessionId());
   }, []);
   const data = useMemo(() => {
     const raw = comments.map(tokens);
@@ -86,14 +96,19 @@ export default function Home() {
     setSaveState("saving");
     setSaveError("");
     const timestamp = new Date().toISOString();
+    const currentSessionId = sessionId || createSessionId();
     setSavedAt(timestamp);
+    setSessionId(currentSessionId);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
       studentName: studentName.trim(),
       studentId: studentId.trim(),
       comments,
       savedAt: timestamp,
+      sessionId: currentSessionId,
     }));
     const result = await saveAnalysisToGoogleSheets({
+      created_at: timestamp,
+      session_id: currentSessionId,
       student_name: studentName.trim(),
       student_id: studentId.trim(),
       comments,
@@ -119,9 +134,17 @@ export default function Home() {
       setSaveState("error");
       return;
     }
-    const headers = ["학번", "이름", "저장 시간", "댓글1", "댓글2", "댓글3", "댓글4", "댓글5", "댓글6", "댓글7"];
-    const row = [studentId.trim(), studentName.trim(), savedAt || new Date().toISOString(), ...comments.slice(0, 7)];
-    while (row.length < headers.length) row.push("");
+    const headers = ["created_at", "session_id", "student_name", "student_id", "last_step", "comments", "vocabulary", "similarity_matrix"];
+    const row = [
+      savedAt || new Date().toISOString(),
+      sessionId || createSessionId(),
+      studentName.trim(),
+      studentId.trim(),
+      step,
+      JSON.stringify(comments),
+      JSON.stringify(data.vocabulary),
+      JSON.stringify(data.matrix),
+    ];
     const worksheet = window.XLSX.utils.aoa_to_sheet([headers, row]);
     const workbook = window.XLSX.utils.book_new();
     window.XLSX.utils.book_append_sheet(workbook, worksheet, "텍스트 데이터");

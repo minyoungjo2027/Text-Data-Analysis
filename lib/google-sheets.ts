@@ -1,4 +1,6 @@
 export type AnalysisSessionPayload = {
+  created_at?: string;
+  session_id?: string;
   student_name: string;
   student_id: string;
   comments: string[];
