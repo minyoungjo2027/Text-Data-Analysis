@@ -19,9 +19,10 @@ const initial = [
   "망고시루 소문 듣고 성심당 다녀왔는데 망고시루 맛은 물론이고 친절한 서비스 덕분에 기분 좋았어요. 같이 산 순수롤도 대박이네요!",
   "성심당 순수롤은 정말 촉촉하고 순수롤 크림이 최고예요. 순수롤 생각나서 성심당 매일 가고 싶어요. 직원분도 아주 친절했습니다.",
   "성심당 순수롤이랑 망고시루 둘 다 사서 먹었는데 순수롤이 생각보다 훨씬 부드럽고 순수롤 달콤해요. 순수롤 강력 추천합니다!",
-  "성심당 친절한 응대 덕분에 구매할 때 기분이 좋았어요. 역시 친절이 기본이 되는 매장이라 친절함에 반해서 성심당 자주 찾게 되네요.",
+  "성심당 친절한 응대 덕분에 구매할 때 기분이 좋았어요. 가격도 착해서 가성비가 좋아요. 역시 가성비와 친절이 기본이 되는 매장이라 친절함에 반해서 자주 찾게 되네요.",
 ];
 const legacyInitialComment = "성심당 망고시루 진짜 최고예요! 망고시루 살 때 직원분도 너무 친절하셔서 감동했어요. 다음에도 망고시루 사러 친절한 성심당 또 갈게요.";
+const legacyInitialComment5 = "성심당 친절한 응대 덕분에 구매할 때 기분이 좋았어요. 역시 친절이 기본이 되는 매장이라 친절함에 반해서 성심당 자주 찾게 되네요.";
 const clusterPalette = [
   { background: "#fff2d9", border: "#d49a4d" },
   { background: "#f8e0d3", border: "#b85c3d" },
@@ -91,7 +92,11 @@ export default function Home() {
       if (session.studentName) setStudentName(session.studentName);
       if (session.studentId) setStudentId(session.studentId);
       if (session.comments?.length) {
-        const comments = session.comments.map((comment, index) => index === 0 && comment === legacyInitialComment ? initial[0] : comment);
+        const comments = session.comments.map((comment, index) => {
+          if (index === 0 && comment === legacyInitialComment) return initial[0];
+          if (index === 4 && comment === legacyInitialComment5) return initial[4];
+          return comment;
+        });
         setComments(comments);
         if (comments[0] !== session.comments[0]) {
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...session, comments }));
