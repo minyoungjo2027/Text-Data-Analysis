@@ -48,6 +48,14 @@ aside.pdf-hide > .primary{display:block;width:100%;margin-top:0}aside.pdf-hide >
 .pdf-exporting .filter-row,.pdf-exporting .score-tooltip{display:none!important}
 .pdf-exporting .stage>.panel{break-before:page;page-break-before:always}
 .pdf-exporting .stage>.panel:first-child{break-before:auto;page-break-before:auto}
+.stage{position:relative}
+.stage>.panel{padding-right:145px}
+.stage>.panel-footer{position:absolute;top:38px;right:38px;z-index:5;display:flex;flex-direction:column;justify-content:flex-start;gap:9px;margin:0;padding:0;border:0;width:112px}
+.stage>.panel-footer button{width:112px;min-height:36px;border-radius:999px;padding:9px 12px;white-space:nowrap}
+.stage>.panel-footer button:not(.next){background:#edf4ef;color:#315c42;border:1px solid #d5e5d9}
+.stage>.panel-footer .next{background:linear-gradient(110deg,#8ff5c0,#a2d2ff);color:#16312c;box-shadow:0 6px 16px rgba(143,245,192,.2)}
+.pdf-exporting .stage>.panel{padding-right:0}
+@media(max-width:780px){.stage>.panel{padding-right:0}.stage>.panel-footer{position:static;width:auto;flex-direction:row;justify-content:space-between;margin-top:31px;padding-top:20px;border-top:1px solid #eee}.stage>.panel-footer button{width:auto}}
 .blue-swatch{background:#aebee2!important}
 .red-swatch{background:#74d8b9!important}
 .motion-on .heatmap-best{box-shadow:0 0 0 3px #8ff5c0,0 0 18px rgba(143,245,192,.5)}
