@@ -103,6 +103,19 @@ aside>p:not(.side-label){color:#bdb5aa}
 .stage>.panel-footer button:not(.next){border-radius:2px;background:#f1ece3;color:#6e5b43;border-color:#d8ccbb}
 footer{background:#050505;border-top:1px solid #2b2722}
 footer .brand-dot{color:#c79d62}
+
+/* Warm emotional palette for the left action panel */
+aside.pdf-hide{background:linear-gradient(165deg,#34251f 0%,#241a17 58%,#1b1513 100%);border-right:1px solid #654735}
+aside.pdf-hide .side-label{color:#e8b276}
+aside.pdf-hide h3{color:#fff0df}
+aside.pdf-hide>p:not(.side-label){color:#d6bba3}
+aside.pdf-hide>.primary{border:1px solid rgba(255,224,188,.42);color:#2b1b12;box-shadow:0 8px 18px rgba(0,0,0,.2);transition:transform .22s ease,filter .22s ease,box-shadow .22s ease}
+aside.pdf-hide>.primary:hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 11px 22px rgba(0,0,0,.28)}
+aside.pdf-hide>.primary:first-of-type{background:linear-gradient(110deg,#f1c17f,#e59a70)}
+aside.pdf-hide>.pdf-button{background:linear-gradient(110deg,#e6b7c2,#d59bb0);color:#321b27}
+aside.pdf-hide>.download-button{background:linear-gradient(110deg,#ead39a,#d9b878);color:#30220f}
+aside.pdf-hide .tip{border-top-color:#684a38;color:#f0b878}
+aside.pdf-hide .tip span{color:#ead6c3}
 .stage{position:relative}
 .stage>.panel{padding-right:145px}
 .stage>.panel-footer{position:absolute;top:38px;right:38px;z-index:5;display:flex;flex-direction:column;justify-content:flex-start;gap:9px;margin:0;padding:0;border:0;width:112px}
