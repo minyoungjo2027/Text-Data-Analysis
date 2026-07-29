@@ -159,6 +159,7 @@ body{background:#f1eee7;color:#2b211b}
 .motion-toggle[aria-pressed="true"]{border-color:#c79d62;color:#ead9bd}
 .tip span,aside>p:not(.side-label){color:#ead9bd}
 .classification-principle{margin-top:28px;padding:22px 24px;background:linear-gradient(110deg,#fff8eb,#f2faf6);border:1px solid #eadcc8;border-radius:14px;color:#4b5f58}
+.comment-card[data-cluster-group],.cluster-card[data-cluster-group]{background-color:var(--cluster-bg)!important;border-left-color:var(--cluster-border)!important}
 .embedding-note{display:flex;flex-direction:column;gap:6px}.embedding-keywords-line{display:inline-block;font-weight:800}.motion-on .embedding-keywords-line{animation:embeddingKeywordPulse 1.8s ease-in-out infinite}.embedding-note-explanation{font-size:11px;color:#8f7357}.motion-off .embedding-keywords-line{animation:none}@keyframes embeddingKeywordPulse{0%,100%{opacity:.72;text-shadow:0 0 0 rgba(199,157,98,0)}50%{opacity:1;text-shadow:0 0 9px rgba(199,157,98,.72)}}
 .panel>.panel-title + .comment + .comment + .panel-title{margin-top:34px}
 .motion-on main .stage>.panel{animation-duration:2.5s!important}
